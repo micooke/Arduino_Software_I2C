@@ -2,11 +2,16 @@
   SoftwareI2C.h
   2012 Copyright (c) Seeed Technology Inc.  All right reserved.
 
-  Author:Loovee
-  2013-11-1
-
   This is a Software I2C Library, can act as I2c master mode.
   
+  @author  Loovee
+  @version 1.0
+  @date    01-Nov-2013
+
+  @author  Mark Cooke
+  @version 1.1
+  @date    01-Sep-2017
+  @brief   uchar -> uint8_t, standardise interface to better match Wire
   
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -26,54 +31,41 @@
 #ifndef _SOFTWAREI2C_H_
 #define _SOFTWAREI2C_H_
 
-#define  GETACK        1                      // get ack                        
-#define  GETNAK        0                      // get nak   
+#include <stdint.h>
+
+#define  GETACK        1 // get ack                        
+#define  GETNAK        0 // get nak   
    
-#ifndef  HIGH        
-#define  HIGH          1
-#endif
-#ifndef  LOW
-#define  LOW           0
-#endif
-
-#ifndef uchar
-#define uchar unsigned char
-#endif
-
 class SoftwareI2C
 {
 private:
+    uint8_t _pinSda;
+    uint8_t _pinScl;
     
-    int pinSda;
-    int pinScl;
+    uint8_t _recv_len;
+    uint8_t _sda_in_out;
     
-    int recv_len;
-    
-    int sda_in_out;
-    
-private:
-    
-    inline void sdaSet(uchar ucDta); 
-    inline void sclSet(uchar ucDta);                                                                   
+    inline void sdaSet(uint8_t ucDta); 
+    inline void sclSet(uint8_t ucDta);                                                                   
 
     inline void sendStart(void);
     inline void sendStop(void);
-    inline uchar getAck(void);
-    inline void sendByte(uchar ucDta);
-    inline uchar sendByteAck(uchar ucDta);                                 // send byte and get ack
+    inline uint8_t getAck(void);
+    inline void sendByte(uint8_t ucDta);
+    inline uint8_t sendByteAck(uint8_t ucDta);  // send byte and get ack
     
 public:
+    SoftwareI2C() : _pinScl(0), _pinSda(1), _recv_len(0), _sda_in_out(0) {}
+    void begin(uint8_t pinSda = 0, uint8_t pinScl = 1); 
+    uint8_t beginTransmission(uint8_t addr);
+    uint8_t endTransmission(bool stopBit = false);
+    void end() {}
     
-    //SoftwareI2C();
-    void begin(int Sda, int Scl); 
-    uchar beginTransmission(uchar addr);
-    uchar endTransmission();
-    
-    uchar write(uchar dta);
-    uchar write(uchar len, uchar *dta);
-    uchar requestFrom(uchar addr, uchar len);
-    uchar read();
-    uchar available(){return recv_len;}
+    uint8_t write(uint8_t dta);
+    uint8_t write(uint8_t *dta, uint8_t len);
+    uint8_t requestFrom(uint8_t addr, uint8_t len);
+    uint8_t read();
+    uint8_t available() { return _recv_len; }
 };
 
 #endif

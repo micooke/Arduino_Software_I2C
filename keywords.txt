@@ -1,59 +1,33 @@
 #######################################
-# Syntax Coloring Map For Seeed OLED
+# Syntax Coloring Map For SoftwareI2C
 #######################################
 
 #######################################
 # Datatypes (KEYWORD1)
 #######################################
 
-addressingMode	KEYWORD1
-SeeedGrayOled	KEYWORD1
+SoftwareI2C	KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-init	KEYWORD1
-setNormalDisplay	KEYWORD1
-setInverseDisplay	KEYWORD1
-sendCommand	KEYWORD1
-setGrayLevel	KEYWORD1
-setVerticalMode	KEYWORD1
-setHorizontalMode	KEYWORD1
-setGrayLevel	KEYWORD1
-setTextXY	KEYWORD1
-clearDisplay	KEYWORD1
-setContrastLevel	KEYWORD1
-putChar	KEYWORD1
-putString	KEYWORD1
-putNumber	KEYWORD1
-drawBitmap	KEYWORD1
-setHorizontalScrollProperties	KEYWORD1
-activateScroll	KEYWORD1
-deactivateScroll	KEYWORD1
-
-
-#######################################
-# Constants (LITERAL1)
-#######################################
-
-Scroll_Left	LITERAL1
-Scroll_Right	LITERAL1
-
-Scroll_2Frames	LITERAL1
-Scroll_3Frames	LITERAL1
-Scroll_4Frames	LITERAL1
-Scroll_5Frames	LITERAL1
-Scroll_25Frames	LITERAL1
-Scroll_64Frames	LITERAL1
-Scroll_128Frames	LITERAL1
-Scroll_256Frames	LITERAL1
+begin	KEYWORD2
+beginTransmission	KEYWORD2
+endTransmission	KEYWORD2
+end	KEYWORD2
+write	KEYWORD2
+requestFrom	KEYWORD2
+read	KEYWORD2
+available	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
 #######################################
 
-SeeedGrayOLED	KEYWORD2
+#######################################
+# Constants (LITERAL1)
+#######################################
 
-
-
+GETACK LITERAL1
+GETNAK LITERAL1

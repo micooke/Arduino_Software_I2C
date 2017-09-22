@@ -1,30 +1,20 @@
-Arduino_SoftWareI2C
-===============
+### SoftwareI2C
 
+This is an Arduino software (master) I2C Library, written by @Seeed-Studio and modified by @micooke to provide a closer interface to hardware Wire libraries.
 
-This is an Arduino software I2C Library, you can use the other pin as I2C interface, such D2, D3.
+**SDA and SCL pin allocation are set using** ```begin(pinSda, pinScl);```
 
-But, you should know that this library can only act as Master.
+This library includes:
+```c++
+    void begin(uint8_t pinSda = 0, uint8_t pinScl = 1); 
+    uint8_t beginTransmission(uint8_t addr);
+    uint8_t endTransmission(bool stopBit = false);
+    void end();
 
-And, Wire.available() is not support. 
+    uint8_t write(uint8_t dta);
+    uint8_t write(uint8_t *dta, uint8_t len);
+    uint8_t requestFrom(uint8_t addr, uint8_t len);
+    uint8_t read();
+    uint8_t available();
+```
 
-
-
-This library include:
-
-
-    void begin(int Sda, int Scl);                   // setup
-    uchar beginTransmission(uchar addr);            // start
-    void endTransmission();                         // end
-    uchar available();                              // is getting data
-
-    uchar write(uchar dta);                         // write a byte
-    uchar write(uchar len, uchar *dta);             // write a array
-    uchar requestFrom(uchar addr, uchar len);       // request some data
-    uchar read();                                   // read a byte
-
-
-
-begin() is something different from <Wire.h>, you have to set pin here.
-
-The others function is just like the hard I2C library.
