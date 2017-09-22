@@ -30,16 +30,13 @@
  * Parameters: Sda: Scl:
  * Return: none
 *************************************************************************************************/
-void SoftwareI2C::begin(int Sda, int Scl)
+void SoftwareI2C::begin()
 {
-    pinSda = Sda;
-    pinScl = Scl;
-
-    pinMode(pinScl, OUTPUT);
-    pinMode(pinSda, OUTPUT);
-    sda_in_out = OUTPUT;
-    digitalWrite(pinScl, HIGH);
-    digitalWrite(pinSda, HIGH);
+    pinMode(_pinScl, OUTPUT);
+    pinMode(_pinSda, OUTPUT);
+    _sda_in_out = OUTPUT;
+    digitalWrite(_pinScl, HIGH);
+    digitalWrite(_pinSda, HIGH);
 }
 
 /*************************************************************************************************
@@ -48,15 +45,14 @@ void SoftwareI2C::begin(int Sda, int Scl)
  * Parameters: ucDta: HIGH or LOW
  * Return: none
 *************************************************************************************************/
-void SoftwareI2C::sdaSet(uchar ucDta)
+void SoftwareI2C::sdaSet(uint8_t ucDta)
 {
-
-    if(sda_in_out != OUTPUT)
+    if(_sda_in_out != OUTPUT)
     {
-        sda_in_out = OUTPUT;
-        pinMode(pinSda, OUTPUT);
+        _sda_in_out = OUTPUT;
+        pinMode(_pinSda, OUTPUT);
     }
-    digitalWrite(pinSda, ucDta);
+    digitalWrite(_pinSda, ucDta);
 }
 
 /*************************************************************************************************
@@ -65,11 +61,10 @@ void SoftwareI2C::sdaSet(uchar ucDta)
  * Parameters: ucDta: HIGH or LOW
  * Return: none
 *************************************************************************************************/
-void SoftwareI2C::sclSet(uchar ucDta)
+void SoftwareI2C::sclSet(uint8_t ucDta)
 {
-    digitalWrite(pinScl, ucDta);
+    digitalWrite(_pinScl, ucDta);
 }
-
 
 /*************************************************************************************************
  * Function Name: getAck
@@ -77,22 +72,22 @@ void SoftwareI2C::sclSet(uchar ucDta)
  * Parameters: None
  * Return: 0 – Nak; 1 – Ack
 *************************************************************************************************/
-uchar SoftwareI2C::getAck(void)
+uint8_t SoftwareI2C::getAck(void)
 {
     sclSet(LOW); 
-    pinMode(pinSda, INPUT);
-    sda_in_out = INPUT;
+    pinMode(_pinSda, INPUT);
+    _sda_in_out = INPUT;
     
     sclSet(HIGH);
     unsigned long timer_t = micros();
     while(1)
     {
-        if(!digitalRead(pinSda))                                // get ack
+        if(!digitalRead(_pinSda)) // get ack
         {
             return GETACK;
         }
         
-        if(micros() - timer_t > 100)return GETNAK;
+        if(micros() - timer_t > 100) return GETNAK;
     }
 }
 
@@ -127,7 +122,7 @@ void SoftwareI2C::sendStop(void)
  * Parameters: ucDta: data to send
  * Return: None
 *************************************************************************************************/
-void SoftwareI2C::sendByte(uchar ucDta)
+void SoftwareI2C::sendByte(uint8_t ucDta)
 {
     for(int i=0; i<8; i++)
     {
@@ -146,7 +141,7 @@ void SoftwareI2C::sendByte(uchar ucDta)
  * Parameters: ucDta: data to send
  * Return: 0: get nak  1: get ack
 *************************************************************************************************/
-uchar SoftwareI2C::sendByteAck(uchar ucDta)
+uint8_t SoftwareI2C::sendByteAck(uint8_t ucDta)
 {
     sendByte(ucDta);
     return getAck();
@@ -158,10 +153,10 @@ uchar SoftwareI2C::sendByteAck(uchar ucDta)
  * Parameters: divider – clock divider
  * Return: 0: get nak  1: get ack
 *************************************************************************************************/
-uchar SoftwareI2C::beginTransmission(uchar addr)
+uint8_t SoftwareI2C::beginTransmission(uint8_t addr)
 {
     sendStart();                            // start signal
-    uchar ret = sendByteAck(addr<<1);       // send write address and get ack
+    uint8_t ret = sendByteAck(addr<<1);       // send write address and get ack
     //sclSet(LOW);
     return ret;
 }
@@ -172,7 +167,7 @@ uchar SoftwareI2C::beginTransmission(uchar addr)
  * Parameters: None
  * Return: None
 *************************************************************************************************/
-uchar SoftwareI2C::endTransmission()
+uint8_t SoftwareI2C::endTransmission(bool stopBit)
 {
     sendStop();   
     return 0;
@@ -184,7 +179,7 @@ uchar SoftwareI2C::endTransmission()
  * Parameters: dta: data to send
  * Return: 0: get nak  1: get ack
 *************************************************************************************************/  
-uchar SoftwareI2C::write(uchar dta)
+uint8_t SoftwareI2C::write(uint8_t dta)
 {
     return sendByteAck(dta);
 }
@@ -196,7 +191,7 @@ uchar SoftwareI2C::write(uchar dta)
                *dta - array to be sent
  * Return: 0: get nak  1: get ack
 *************************************************************************************************/
-uchar SoftwareI2C::write(uchar len, uchar *dta)
+uint8_t SoftwareI2C::write(uint8_t *dta, uint8_t len)
 {
     for(int i=0; i<len; i++)
     {
@@ -217,11 +212,11 @@ uchar SoftwareI2C::write(uchar len, uchar *dta)
                len  - length of request
  * Return: 0: get nak  1: get ack
 *************************************************************************************************/
-uchar SoftwareI2C::requestFrom(uchar addr, uchar len)
+uint8_t SoftwareI2C::requestFrom(uint8_t addr, uint8_t len)
 {
     sendStart();                       // start signal
-    recv_len = len;
-    uchar ret = sendByteAck((addr<<1)+1);       // send write address and get ack
+    _recv_len = len;
+    uint8_t ret = sendByteAck((addr<<1)+1);       // send write address and get ack
     //sclSet(LOW);
     return ret;
 }
@@ -232,39 +227,39 @@ uchar SoftwareI2C::requestFrom(uchar addr, uchar len)
  * Parameters: None
  * Return: data get
 *************************************************************************************************/
-uchar SoftwareI2C::read()
+uint8_t SoftwareI2C::read()
 {
-    if(!recv_len)return 0;
+    if(!_recv_len)return 0;
 
-    uchar ucRt = 0;
+    uint8_t ucRt = 0;
 
-    pinMode(pinSda, INPUT);
-    sda_in_out = INPUT;
+    pinMode(_pinSda, INPUT);
+    _sda_in_out = INPUT;
     
     for(int i=0; i<8; i++)
     {
         unsigned  char  ucBit;
         sclSet(LOW);
         sclSet(HIGH);
-        ucBit = digitalRead(pinSda);
+        ucBit = digitalRead(_pinSda);
         ucRt = (ucRt << 1) + ucBit;
     }  
     
-    uchar dta = ucRt;
-    recv_len--;
+    uint8_t dta = ucRt;
+    _recv_len--;
 
-    if(recv_len>0)          // send ACK
+    if(_recv_len>0)     // send ACK
     {
-        sclSet(LOW);                                                // sclSet(HIGH)    
-        sdaSet(LOW);                                                // sdaSet(LOW)                 
-        sclSet(HIGH);                                               //  sclSet(LOW)  
+        sclSet(LOW);    // sclSet(HIGH)    
+        sdaSet(LOW);    // sdaSet(LOW)                 
+        sclSet(HIGH);   //  sclSet(LOW)  
         sclSet(LOW);
     }
-    else                    // send NAK
+    else                // send NAK
     {
-        sclSet(LOW);                                                // sclSet(HIGH)    
-        sdaSet(HIGH);                                               // sdaSet(LOW)                 
-        sclSet(HIGH);                                               //  sclSet(LOW) 
+        sclSet(LOW);    // sclSet(HIGH)    
+        sdaSet(HIGH);   // sdaSet(LOW)                 
+        sclSet(HIGH);   //  sclSet(LOW) 
         sclSet(LOW);
         sendStop();
     }

@@ -1,30 +1,31 @@
-// i2c scan
-#include "SoftwareI2C.h"
+#include <SoftwareI2C.h>
 
 SoftwareI2C softwarei2c;
 
 void setup()
 {
-    Serial.begin(115200);
-    softwarei2c.begin(3, 2);       // sda, scl
-    Serial.println("begin to scan...");
+    Serial.begin(9600);
+    softwarei2c.begin(0, 1); // sda, scl
 }
 
 void loop()
 {
-    for(unsigned char i=1; i<=127; i++)
+    Serial.println("Scanning...");
+    uint8_t devicesFound = 0;
+    for(uint8_t address=1; address<128; ++address)
     {
-        if(softwarei2c.beginTransmission(i))
+        if(softwarei2c.beginTransmission(address))
         {
-            Serial.print("0x");
-            Serial.println(i, HEX);
-            
-            while(1);
+            Serial.print("Found : 0x");
+            Serial.println(address, HEX);
+            ++devicesFound;
         }
         softwarei2c.endTransmission();
     }
-    
-    Serial.println("find nothing");
-    while(1);
-    
+
+    if (!devicesFound)
+    {
+      Serial.println("No I2C devices found");
+    }
+    delay(1000);
 }
