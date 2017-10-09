@@ -176,7 +176,8 @@ void setI2CPins()
       Serial.print(", scl = ");
       Serial.println(scl_pin);
       
-      softwarei2c.begin(sda_pin, scl_pin);
+      softwarei2c.init(sda_pin, scl_pin);
+      softwarei2c.begin();
       scanCommand();
    }
    else

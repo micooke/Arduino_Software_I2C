@@ -5,7 +5,8 @@ SoftwareI2C softwarei2c;
 void setup()
 {
     Serial.begin(9600);
-    softwarei2c.begin(0, 1); // sda, scl
+    softwarei2c.init(0, 1); // sda, scl
+    softwarei2c.begin();
 }
 
 void loop()

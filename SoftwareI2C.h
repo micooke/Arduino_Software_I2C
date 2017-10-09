@@ -56,7 +56,8 @@ private:
     
 public:
     SoftwareI2C(uint8_t pinSda = 0, uint8_t pinScl = 1) : _pinScl(pinScl), _pinSda(pinSda), _recv_len(0), _sda_in_out(0) {}
-    void begin(); 
+    void init(uint8_t pinSda = 0, uint8_t pinScl = 1) { _pinSda = pinSda; _pinScl = pinScl; }
+    void begin();
     uint8_t beginTransmission(uint8_t addr);
     uint8_t endTransmission(bool stopBit = false);
     void end() {}
