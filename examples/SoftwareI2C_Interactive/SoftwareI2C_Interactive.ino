@@ -1,7 +1,4 @@
-#include <SoftwareI2C.h>  // https://github.com/micooke/SoftwareI2C
-
-SoftwareI2C softwarei2c;
-
+#define USE_SOFTWAREI2C
 #include "SerialCommands.h"
 /*
 Note : Serial Commands requires the following libraries
@@ -14,7 +11,9 @@ void setup(void)
    Serial.begin(9600);
    Serial.println("SDA,SCL = 0,1");
 
+#ifdef USE_SOFTWAREI2C
    sCmd.addCommand("P", setI2CPins);
+#endif
    sCmd.addCommand("R", readDecCommand);
    sCmd.addCommand("RX", readHexCommand);
    sCmd.addCommand("W", writeDecCommand);
@@ -22,7 +21,7 @@ void setup(void)
    sCmd.addCommand("S", scanCommand);
    sCmd.setDefaultHandler(unrecognized);
 
-   softwarei2c.begin();  // defaults to (sda,scl) = (0,1)
+   i2c_begin();
 
    unrecognized(NULL);
 }

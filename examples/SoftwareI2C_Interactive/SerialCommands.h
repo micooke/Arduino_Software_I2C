@@ -1,14 +1,28 @@
+#ifdef USE_SOFTWAREI2C
 #include <SoftwareI2C.h>  // https://github.com/micooke/SoftwareI2C
+SoftwareI2C softwarei2c;
+#define _i2c softwarei2c
+#else
+#include <Wire.h>
+#define _i2c Wire
+#endif
 #include <SerialCommand.h> // https://github.com/kroimon/Arduino-SerialCommand
 #include <Vector.h> // https://github.com/zacsketches/Arduino_Vector
 
 SerialCommand sCmd;
 
+void i2c_begin()
+{
+  _i2c.begin();
+}
+
 void unrecognized(const char *c)
 {
    Serial.println(
        "Commands are :\n"
+#ifdef USE_SOFTWAREI2C
        "P sda_pin scl_pin - sets I2C pins\n"
+#endif
        "S - scan for I2C devices using the current sda,scl pins\n"
        "R device_address reg_num reg_len - reads 'reg_len' bytes from register "
        "'reg_num'\n"
@@ -26,16 +40,16 @@ bool readRegister(uint8_t deviceAddress, uint8_t reg, uint8_t len, Vector<uint8_
 {
    bool ack = true;
 
-   softwarei2c.beginTransmission(deviceAddress);
-   ack &= softwarei2c.write(reg);
-   softwarei2c.endTransmission();  // false);
-   ack &= (softwarei2c.requestFrom(deviceAddress, len) > 0);
+   _i2c.beginTransmission(deviceAddress);
+   ack &= _i2c.write(reg);
+   _i2c.endTransmission();  // false);
+   ack &= (_i2c.requestFrom(deviceAddress, len) > 0);
    
    if (ack)
    {
-     while (softwarei2c.available())
+     while (_i2c.available())
      {
-        inBytes.push_back(softwarei2c.read());
+        inBytes.push_back(_i2c.read());
      }
    }
    return ack;
@@ -44,10 +58,10 @@ bool readRegister(uint8_t deviceAddress, uint8_t reg, uint8_t len, Vector<uint8_
 bool writeRegister(uint8_t deviceAddress, uint8_t reg, uint8_t data)
 {
    bool ack = true;
-   softwarei2c.beginTransmission(deviceAddress);
-   ack &= softwarei2c.write(reg);
-   ack &= softwarei2c.write(data);
-   softwarei2c.endTransmission();  // true);
+   _i2c.beginTransmission(deviceAddress);
+   ack &= _i2c.write(reg);
+   ack &= _i2c.write(data);
+   _i2c.endTransmission();  // true);
 
    return ack;
 }
@@ -160,6 +174,7 @@ void scanCommand()
       Serial.println("\nI2C scan complete");
 }
 
+#ifdef USE_SOFTWAREI2C
 //"P sda_pin scl_pin - sets I2C pins\n"
 void setI2CPins()
 {
@@ -176,8 +191,8 @@ void setI2CPins()
       Serial.print(", scl = ");
       Serial.println(scl_pin);
       
-      softwarei2c.init(sda_pin, scl_pin);
-      softwarei2c.begin();
+      _i2c.init(sda_pin, scl_pin);
+      _i2c.begin();
       scanCommand();
    }
    else
@@ -185,6 +200,7 @@ void setI2CPins()
       Serial.println("Two arguments are required : P sda_pin scl_pin");
    }
 }
+#endif
 
 //"R device_address reg_num reg_len - reads 'reg_len' bytes from register
 //'reg_num'\n"
