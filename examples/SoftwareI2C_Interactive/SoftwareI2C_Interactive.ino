@@ -9,7 +9,9 @@ Note : Serial Commands requires the following libraries
 void setup(void)
 {
    Serial.begin(9600);
-   Serial.println("SDA,SCL = 0,1");
+   Serial.println(__FILE__);
+   Serial.println(__TIME__);
+   Serial.println("SDA,SCL = 7,8");
 
 #ifdef USE_SOFTWAREI2C
    sCmd.addCommand("P", setI2CPins);

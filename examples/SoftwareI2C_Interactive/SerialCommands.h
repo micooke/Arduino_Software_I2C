@@ -1,7 +1,6 @@
 #ifdef USE_SOFTWAREI2C
 #include <SoftwareI2C.h>  // https://github.com/micooke/SoftwareI2C
-SoftwareI2C softwarei2c;
-#define _i2c softwarei2c
+SoftwareI2C _i2c;
 #else
 #include <Wire.h>
 #define _i2c Wire
@@ -152,7 +151,10 @@ void scanCommand()
    for (uint8_t address = 0; address < 127; address++)
    {
       Vector<uint8_t> inBytes;
-      ack = readRegister(address, 0x00, 1, inBytes);
+      _i2c.beginTransmission(address)
+      ack = (_i2c.endTransmission() == 0);
+      //ack = readRegister(address, 0x00, 1, inBytes);
+      
       if (ack)
       {
          Serial.print("\n");

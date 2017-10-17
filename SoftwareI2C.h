@@ -44,6 +44,8 @@ private:
     
     uint8_t _recv_len;
     uint8_t _sda_in_out;
+
+    uint8_t _error;
     
     inline void sdaSet(uint8_t ucDta); 
     inline void sclSet(uint8_t ucDta);                                                                   
@@ -55,8 +57,8 @@ private:
     inline uint8_t sendByteAck(uint8_t ucDta);  // send byte and get ack
     
 public:
-    SoftwareI2C(uint8_t pinSda = 0, uint8_t pinScl = 1) : _pinScl(pinScl), _pinSda(pinSda), _recv_len(0), _sda_in_out(0) {}
-    void init(uint8_t pinSda = 0, uint8_t pinScl = 1) { _pinSda = pinSda; _pinScl = pinScl; }
+    SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8) : _pinScl(pinScl), _pinSda(pinSda), _recv_len(0), _sda_in_out(0), _error(0) {}
+    void init(uint8_t pinSda = 7, uint8_t pinScl = 8) { _pinSda = pinSda; _pinScl = pinScl; }
     void begin();
     uint8_t beginTransmission(uint8_t addr);
     uint8_t endTransmission(bool stopBit = false);

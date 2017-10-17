@@ -1,12 +1,18 @@
-#include <SoftwareI2C.h>
-
-SoftwareI2C softwarei2c;
+#ifdef USE_SOFTWAREI2C
+#include <SoftwareI2C.h>  // https://github.com/micooke/SoftwareI2C
+SoftwareI2C _i2c;
+#else
+#include <Wire.h>
+#define _i2c Wire
+#endif
 
 void setup()
 {
     Serial.begin(9600);
-    softwarei2c.init(0, 1); // sda, scl
-    softwarei2c.begin();
+    Serial.println(__FILE__);
+    Serial.println(__TIME__);
+    _i2c.init(7, 8); // sda, scl
+    _i2c.begin();
 }
 
 void loop()
@@ -15,13 +21,15 @@ void loop()
     uint8_t devicesFound = 0;
     for(uint8_t address=1; address<128; ++address)
     {
-        if(softwarei2c.beginTransmission(address))
+        _i2c.beginTransmission(address)
+        uint8_t device_found = (_i2c.endTransmission() == 0);
+
+        if(device_found)
         {
             Serial.print("Found : 0x");
             Serial.println(address, HEX);
             ++devicesFound;
         }
-        softwarei2c.endTransmission();
     }
 
     if (!devicesFound)

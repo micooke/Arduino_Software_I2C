@@ -155,22 +155,22 @@ uint8_t SoftwareI2C::sendByteAck(uint8_t ucDta)
 *************************************************************************************************/
 uint8_t SoftwareI2C::beginTransmission(uint8_t addr)
 {
-    sendStart();                            // start signal
-    uint8_t ret = sendByteAck(addr<<1);       // send write address and get ack
+    sendStart();                          // start signal
+    _error = !sendByteAck(addr<<1);       // send write address and get ack
     //sclSet(LOW);
-    return ret;
+    return !_error;
 }
 
 /*************************************************************************************************
  * Function Name: endTransmission
  * Description:  send stop signal
  * Parameters: None
- * Return: None
+ * Return: 0: get ack  1: get nak (inverse of beginTransmission)
 *************************************************************************************************/
 uint8_t SoftwareI2C::endTransmission(bool stopBit)
 {
     sendStop();   
-    return 0;
+    return _error;
 }
 
 /*************************************************************************************************
