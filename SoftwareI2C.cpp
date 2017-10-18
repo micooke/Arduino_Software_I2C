@@ -79,16 +79,15 @@ uint8_t SoftwareI2C::getAck(void)
     _sda_in_out = INPUT;
     
     sclSet(HIGH);
-    unsigned long timer_t = micros();
-    while(1)
+    uint32_t timer_t = micros();
+    while(micros() - timer_t < 101)
     {
         if(!digitalRead(_pinSda)) // get ack
         {
             return GETACK;
         }
-        
-        if(micros() - timer_t > 100) return GETNAK;
     }
+    return GETNAK;
 }
 
 /*************************************************************************************************
@@ -158,6 +157,7 @@ uint8_t SoftwareI2C::beginTransmission(uint8_t addr)
     sendStart();                          // start signal
     _error = !sendByteAck(addr<<1);       // send write address and get ack
     //sclSet(LOW);
+    _transmissionBegun = true;
     return !_error;
 }
 
@@ -169,7 +169,12 @@ uint8_t SoftwareI2C::beginTransmission(uint8_t addr)
 *************************************************************************************************/
 uint8_t SoftwareI2C::endTransmission(bool stopBit)
 {
-    sendStop();   
+    sendStop();
+    if (_transmissionBegun == false)
+    {
+        _error = 1;
+    }
+    _transmissionBegun = false;
     return _error;
 }
 
@@ -218,6 +223,7 @@ uint8_t SoftwareI2C::requestFrom(uint8_t addr, uint8_t len)
     _recv_len = len;
     uint8_t ret = sendByteAck((addr<<1)+1);       // send write address and get ack
     //sclSet(LOW);
+    _transmissionBegun = true;
     return ret;
 }
 

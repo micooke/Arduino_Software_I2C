@@ -8,6 +8,8 @@ SoftwareI2C _i2c;
 #include <SerialCommand.h> // https://github.com/kroimon/Arduino-SerialCommand
 #include <Vector.h> // https://github.com/zacsketches/Arduino_Vector
 
+#include <i2c_device_list.h> //adds 7952 bytes, so comment it out if you dont need it
+
 SerialCommand sCmd;
 
 void i2c_begin()
@@ -37,12 +39,10 @@ void unrecognized(const char *c)
 
 bool readRegister(uint8_t deviceAddress, uint8_t reg, uint8_t len, Vector<uint8_t> &inBytes)
 {
-   bool ack = true;
-
    _i2c.beginTransmission(deviceAddress);
-   ack &= _i2c.write(reg);
+   _i2c.write(reg);
    _i2c.endTransmission();  // false);
-   ack &= (_i2c.requestFrom(deviceAddress, len) > 0);
+   bool ack = (_i2c.requestFrom(deviceAddress, len) > 0);
    
    if (ack)
    {
@@ -150,24 +150,22 @@ void scanCommand()
 
    for (uint8_t address = 0; address < 127; address++)
    {
-      Vector<uint8_t> inBytes;
-      _i2c.beginTransmission(address)
-      ack = (_i2c.endTransmission() == 0);
-      //ack = readRegister(address, 0x00, 1, inBytes);
+      _i2c.beginTransmission(address);
+      _i2c.write((uint8_t)0); // register 0
+      _i2c.endTransmission();
+      uint8_t ack = (_i2c.requestFrom(address, 1) == 1); // read 1 byte of data
+      _i2c.endTransmission();
       
       if (ack)
       {
-         Serial.print("\n");
-         Serial.print(address, DEC);
-         Serial.print("(0x");
+         Serial.print("Found : 0x");
          if (address < 16) Serial.print("0");
-         Serial.print(address, HEX);
-         Serial.print(")");
+         Serial.println(address, HEX);
+         #ifdef I2C_DEVICE_LIST_H
+         String device_name = i2c_device_list(address);
+         Serial.println(device_name.c_str());
+         #endif
          nDevices++;
-      }
-      else
-      {
-        Serial.print(".");
       }
    }
    if (nDevices == 0)
