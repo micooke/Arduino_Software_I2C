@@ -1,8 +1,10 @@
 ### SoftwareI2C
 
-This is an Arduino software (master) I2C Library, written by @Seeed-Studio and modified by @micooke to provide a closer interface to hardware Wire libraries.
+This is an Arduino software (master) I2C Library, written by @Seeed-Studio and (heavily) modified by @micooke to provide a closer interface to hardware Wire libraries.
 
 **SDA and SCL pin allocation are set using the constructor or init() function**
+
+Note : no communications throttling is applied, however there is scope via the included tunedDelay function (from SoftwareSerial) to add this in the future. An AtMega32u4 will run at around 31kHz, a nRF52832 will run at around 400kHz.
 
 Example
 
@@ -19,11 +21,12 @@ softwarei2c.begin(); // sda, scl are now set
 
 This library includes the following functions:
 ```c++
-SoftwareI2C(uint8_t pinSda = 0, uint8_t pinScl = 1); // constructor
-void init(uint8_t pinSda = 0, uint8_t pinScl = 1);
+SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8); // constructor
+void init(uint8_t pinSda = 7, uint8_t pinScl = 8);
 void begin(); 
-uint8_t beginTransmission(uint8_t addr);
+void beginTransmission(uint8_t addr);
 uint8_t endTransmission(bool stopBit = false);
+void setClock(uint32_t baudrate);
 void end();
 
 uint8_t write(uint8_t dta);
