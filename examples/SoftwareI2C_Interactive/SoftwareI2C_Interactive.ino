@@ -1,4 +1,4 @@
-#define USE_SOFTWAREI2C
+//#define USE_SOFTWAREI2C
 #include "SerialCommands.h"
 /*
 Note : Serial Commands requires the following libraries
@@ -11,7 +11,10 @@ void setup(void)
    Serial.begin(9600);
    Serial.println(__FILE__);
    Serial.println(__TIME__);
-   Serial.println("SDA,SCL = 7,8");
+   Serial.println("SDA,SCL = 24,25");
+
+   digitalWrite(13, HIGH);
+   pinMode(13, OUTPUT);
 
 #ifdef USE_SOFTWAREI2C
    sCmd.addCommand("P", setI2CPins);

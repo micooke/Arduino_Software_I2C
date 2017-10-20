@@ -1,6 +1,10 @@
 #ifdef USE_SOFTWAREI2C
 #include <SoftwareI2C.h>  // https://github.com/micooke/SoftwareI2C
-SoftwareI2C _i2c;
+#ifdef __AVR__
+SoftwareI2C _i2c(20,21);
+#else
+SoftwareI2C _i2c(24,25);
+#endif
 #else
 #include <Wire.h>
 #define _i2c Wire
@@ -8,12 +12,13 @@ SoftwareI2C _i2c;
 #include <SerialCommand.h> // https://github.com/kroimon/Arduino-SerialCommand
 #include <Vector.h> // https://github.com/zacsketches/Arduino_Vector
 
-#include <i2c_device_list.h> //adds 7952 bytes, so comment it out if you dont need it
+//#include <i2c_device_list.h> //adds 7952 bytes, so comment it out if you dont need it
 
 SerialCommand sCmd;
 
 void i2c_begin()
 {
+  _i2c.setClock(250000);
   _i2c.begin();
 }
 
@@ -132,6 +137,8 @@ void writeHexCommand()
    uint8_t reg_val     = strtoul(arg, NULL, 16);
    if (arg != NULL)
    {
+      digitalWrite(13, HIGH);
+      digitalWrite(13, LOW);
       writeCommand(i2c_address, reg_num, reg_val);
    }
    else
@@ -241,6 +248,8 @@ void readHexCommand()
 
    if (arg != NULL)
    {
+      digitalWrite(13, HIGH);
+      digitalWrite(13, LOW);
       readCommand(i2c_address, reg_num, reg_len);
    }
    else
