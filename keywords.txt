@@ -15,7 +15,7 @@ SoftwareI2C	KEYWORD1
 begin	KEYWORD2
 beginTransmission	KEYWORD2
 endTransmission	KEYWORD2
-setClock KEYWORD2
+setClock	KEYWORD2
 end	KEYWORD2
 write	KEYWORD2
 requestFrom	KEYWORD2
