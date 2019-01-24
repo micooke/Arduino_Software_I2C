@@ -34,6 +34,11 @@
 #include <stdint.h>
 #ifdef __AVR__
 #include <util/delay_basic.h>
+// tunedDelay for AVR uses _delay_loop_2() which delays for 4 clock cycles.
+// We pass the delay in us, so we need to scale this by 4*F_CPU in seconds, multiplied by 1e6 to get us
+// The only problem, is that normally F_CPU is 16MHz, so we get 0.25 which is truncated to 0 with the #define
+// The solution is to invert and divide the required delay by this value
+#define _avr_bit_delay_scaling (F_CPU/4*1000000)
 #endif
 
 class SoftwareI2C
@@ -41,20 +46,22 @@ class SoftwareI2C
 private:
     uint8_t _pinSda;
     uint8_t _pinScl;
-    
-    int16_t _rx_len;
-    uint8_t _sda_in_out;
 
-    uint16_t _bit_delay;
+    RingBuffer rxBuffer;
+    RingBuffer txBuffer;
+
     uint16_t _bit_delay_us;
+    uint16_t _half_bit_delay_us;
 
     uint8_t _i2c_address;
 
-    uint8_t _success;
     bool _transmissionBegun;
     
-    inline void sdaSet(uint8_t ucDta); 
-    inline void sclSet(uint8_t ucDta);                                                                   
+    inline uint8_t sdaGet();
+    inline uint8_t sclGet();
+
+    inline void sdaSet(uint8_t ucDta);
+    inline void sclSet(uint8_t ucDta);
 
     inline void sendStart(void);
     inline void sendStop(void);
@@ -64,18 +71,19 @@ private:
     // Note : tunedDelay should be used to throttle comms by appropriately delaying the SCL toggling
     //        However the I2C devices i work with are tolerant to non-standard rates, so this is not implemented
 #ifdef __AVR__
-    inline void tunedDelay(uint16_t delay) { _delay_loop_2(delay); }
+    inline void tunedDelay(uint16_t delay_us) { _delay_loop_2(delay_us / _avr_bit_delay_scaling); }
 #else
-    inline void tunedDelay(uint16_t delay)
+    inline void tunedDelay(uint16_t delay_us)
     {
-      uint32_t delay_us = (4000000 / F_CPU);
-      delay_us *= delay;
+      // TODO: Measure how long digitalWrite, pinMode etc take and compensate by this
+      // maybe use ___attribute__( ( always_inline ) ) static __INLINE void __NOP(void) { __ASM volatile ("nop"); }
+      // to create a _delay_loop_2() ?
       delayMicroseconds(delay_us);
     }
 #endif
     
 public:
-    SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8) : _pinScl(pinScl), _pinSda(pinSda), _rx_len(0), _sda_in_out(0), _success(0), _transmissionBegun(false), _i2c_address(0x3C) { setClock(100000); }
+    SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8) : _pinScl(pinScl), _pinSda(pinSda), _transmissionBegun(false), _i2c_address(0x3C) { setClock(/*100000*/0); }
     void init(uint8_t pinSda = 7, uint8_t pinScl = 8) { _pinSda = pinSda; _pinScl = pinScl; }
     void begin();
     void beginTransmission(uint8_t addr);
@@ -87,7 +95,7 @@ public:
     uint8_t write(uint8_t *dta, uint8_t len);
     uint8_t requestFrom(uint8_t addr, uint8_t len);
     uint8_t read();
-    uint8_t available() { return _rx_len; }
+    uint8_t available() { return rxBuffer.available();}
 };
 
 #endif
