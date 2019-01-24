@@ -75,13 +75,8 @@ void populate_UNUSED_PINS()
 bool device_found(uint8_t i2c_address)
 {
   _i2c.beginTransmission(i2c_address);
-  _i2c.write((uint8_t)0); // register 0
-  _i2c.endTransmission();
-  uint8_t device_found = (_i2c.requestFrom(i2c_address, 1) == 1); // read 1 byte of data
-  //uint8_t result = _i2c.endTransmission();
-  //return ((device_found) && (result == 0));
-  _i2c.endTransmission();
-  return device_found;
+  bool _device_found = (_i2c.endTransmission() == 0);
+  return _device_found;
 }
 
 void find_devices(uint8_t pin_sda, uint8_t pin_scl)

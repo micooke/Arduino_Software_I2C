@@ -47,27 +47,26 @@ bool readRegister(uint8_t deviceAddress, uint8_t reg, uint8_t len, Vector<uint8_
    _i2c.beginTransmission(deviceAddress);
    _i2c.write(reg);
    _i2c.endTransmission();  // false);
-   bool ack = (_i2c.requestFrom(deviceAddress, len) > 0);
+   bool success = (_i2c.requestFrom(deviceAddress, len) == len);
    
-   if (ack)
+   if (success)
    {
      while (_i2c.available())
      {
         inBytes.push_back(_i2c.read());
      }
    }
-   return ack;
+   return success;
 }
 
 bool writeRegister(uint8_t deviceAddress, uint8_t reg, uint8_t data)
 {
-   bool ack = true;
    _i2c.beginTransmission(deviceAddress);
-   ack &= _i2c.write(reg);
-   ack &= _i2c.write(data);
-   _i2c.endTransmission();  // true);
+   _i2c.write(reg);
+   _i2c.write(data);
+   bool success = (_i2c.endTransmission() == 0);
 
-   return ack;
+   return success;
 }
 
 void readCommand(uint8_t i2c_address, uint8_t reg_num, uint8_t reg_len)
@@ -150,7 +149,7 @@ void writeHexCommand()
 
 void scanCommand()
 {
-   uint8_t ack, address;
+   uint8_t device_found, address;
    uint8_t nDevices = 0;
   
    Serial.println("Scanning...");
@@ -158,12 +157,9 @@ void scanCommand()
    for (uint8_t address = 0; address < 127; address++)
    {
       _i2c.beginTransmission(address);
-      _i2c.write((uint8_t)0); // register 0
-      _i2c.endTransmission();
-      uint8_t ack = (_i2c.requestFrom(address, 1) == 1); // read 1 byte of data
-      _i2c.endTransmission();
+      device_found = (_i2c.endTransmission() == 0);
       
-      if (ack)
+      if (device_found)
       {
          Serial.print("Found : 0x");
          if (address < 16) Serial.print("0");
