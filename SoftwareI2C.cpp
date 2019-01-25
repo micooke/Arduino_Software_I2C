@@ -28,7 +28,6 @@ void SoftwareI2C::setClock(uint32_t frequency_Hz)
 {
     if (frequency_Hz == 0)
     {
-        _bit_delay_us = 0;
         _half_bit_delay_us = 0;
         return;
     }
@@ -50,9 +49,8 @@ void SoftwareI2C::setClock(uint32_t frequency_Hz)
     }
 
 
-    // Precalculate the bit_delay, in number of 4-cycle delays
-    _bit_delay_us = (1000000 / frequency_Hz);
-    _half_bit_delay_us = _bit_delay_us/2;
+    // The half bit delay is half the period
+    _half_bit_delay_us = (1000000 / frequency_Hz)/2;
  }
 
 /*************************************************************************************************
@@ -63,14 +61,15 @@ void SoftwareI2C::setClock(uint32_t frequency_Hz)
 *************************************************************************************************/
 void SoftwareI2C::begin()
 {
-    pinMode(_pinScl, OUTPUT);
-    pinMode(_pinSda, OUTPUT);
     digitalWrite(_pinScl, HIGH);
     digitalWrite(_pinSda, HIGH);
+
+    pinMode(_pinScl, OUTPUT);
+    pinMode(_pinSda, OUTPUT);
 }
 /*************************************************************************************************
  * Function Name: sdaGet
- * Description:  get sda digital value
+ * Description:  get sda digital value, toggling between INPUT and OUTPUT
  * Parameters: None
  * Return: HIGH or LOW
 *************************************************************************************************/
@@ -80,6 +79,17 @@ uint8_t SoftwareI2C::sdaGet()
     uint8_t value = digitalRead(_pinSda);
     pinMode(_pinSda, OUTPUT);
     return value;
+}
+
+/*************************************************************************************************
+ * Function Name: quickSdaGet
+ * Description:  get sda digital value
+ * Parameters: None
+ * Return: HIGH or LOW
+*************************************************************************************************/
+uint8_t SoftwareI2C::quickSdaGet()
+{
+    return digitalRead(_pinSda);
 }
 
 /*************************************************************************************************
@@ -112,11 +122,9 @@ void SoftwareI2C::sclSet(uint8_t ucDta)
 *************************************************************************************************/
 uint8_t SoftwareI2C::getAck(void)
 {
-    sdaSet(HIGH);
     sclSet(HIGH);
-    tunedDelay(_half_bit_delay_us); // sample in the middle of the pulse
+    tunedDelay(_half_bit_delay_us/2); // sample in the middle of the pulse
     uint8_t Ack = sdaGet(); // get ack
-    sdaSet(LOW);
     sclSet(LOW);
     
     return Ack;
@@ -130,18 +138,17 @@ uint8_t SoftwareI2C::getAck(void)
 *************************************************************************************************/
 void SoftwareI2C::sendStart(void)
 {
-    uint8_t sdaValue = sdaGet();
-    if (sdaValue == 0)
+    if (sdaGet() == LOW)
     {
-        sdaSet(HIGH);
-        tunedDelay(_half_bit_delay_us);
         sclSet(HIGH);
-        tunedDelay(_bit_delay_us);
+        tunedDelay(_half_bit_delay_us);
+        sdaSet(HIGH);
+        //tunedDelay(_half_bit_delay_us);
     }
     sdaSet(LOW);
     tunedDelay(_half_bit_delay_us);
     sclSet(LOW);
-    tunedDelay(_bit_delay_us);
+    //tunedDelay(_half_bit_delay_us);
 }
 
 /*************************************************************************************************
@@ -152,15 +159,13 @@ void SoftwareI2C::sendStart(void)
 *************************************************************************************************/
 void SoftwareI2C::sendStop(void)
 {
-    if (sdaGet() == HIGH)
-    {
-        sdaSet(LOW);
-        tunedDelay(_bit_delay_us);
-    }
+    sdaSet(LOW);
+    sclSet(LOW);
+    tunedDelay(_half_bit_delay_us);
     sclSet(HIGH);
-    tunedDelay(_bit_delay_us);
+    tunedDelay(_half_bit_delay_us);
     sdaSet(HIGH);
-    tunedDelay(_bit_delay_us);
+    //tunedDelay(_half_bit_delay_us);
 }
 
 /*************************************************************************************************
@@ -171,16 +176,13 @@ void SoftwareI2C::sendStop(void)
 *************************************************************************************************/
 void SoftwareI2C::sendByte(uint8_t ucDta)
 {
-    uint32_t timer_t = micros();
     for(uint8_t i=0; i<8; ++i)
     {
-        timer_t = micros();
         sdaSet((ucDta&0x80)!=0);
-        tunedDelay(_bit_delay_us);
         sclSet(HIGH);
-        tunedDelay(_bit_delay_us);
+        tunedDelay(_half_bit_delay_us);
         sclSet(LOW);
-        tunedDelay(_bit_delay_us);
+        tunedDelay(_half_bit_delay_us);
         ucDta <<= 1;
     }
 }
@@ -189,7 +191,7 @@ void SoftwareI2C::sendByte(uint8_t ucDta)
  * Function Name: sendByteAck
  * Description:  send a byte and get ack signal
  * Parameters: ucDta: data to send
- * Return: 0: get nak  1: get ack
+ * Return: 0: get ack  1: get nak
 *************************************************************************************************/
 uint8_t SoftwareI2C::sendByteAck(uint8_t ucDta)
 {
@@ -208,7 +210,6 @@ void SoftwareI2C::beginTransmission(uint8_t addr)
     _i2c_address = addr;
     _transmissionBegun = true;
     sendStart();                  // start signal
-    //sendByteAck(_i2c_address<<1); // send write address and get ack
     write(_i2c_address<<1);
 }
 
@@ -227,7 +228,7 @@ uint8_t SoftwareI2C::endTransmission(bool stopBit)
         {
             _success = sendByteAck(txBuffer.read_char());
         }
-
+        
         sendStop();
         _transmissionBegun = false;
     }
@@ -239,19 +240,18 @@ uint8_t SoftwareI2C::endTransmission(bool stopBit)
  * Function Name: write
  * Description:  send a byte
  * Parameters: dta: data to send
- * Return: 0: get nak  1: get ack
+ * Return: 0: fail  1: success
 *************************************************************************************************/  
-uint8_t SoftwareI2C::write(uint8_t dta)
+size_t SoftwareI2C::write(uint8_t dta)
 {
-    //return sendByteAck(dta);
     // No writing, without begun transmission or a full buffer
     if ( !_transmissionBegun || txBuffer.isFull() )
     {
-        return 0 ;
+        return 0;
     }
 
     txBuffer.store_char( dta ) ;
-    return 1 ;
+    return 1;
 }
 
 /*************************************************************************************************
@@ -259,23 +259,11 @@ uint8_t SoftwareI2C::write(uint8_t dta)
  * Description:  write array
  * Parameters: len - length of the array
                *dta - array to be sent
- * Return: 0: get nak  1: get ack
+ * Return: number of bytes stored for write
 *************************************************************************************************/
-uint8_t SoftwareI2C::write(uint8_t *dta, uint8_t len)
+size_t SoftwareI2C::write(uint8_t *dta, size_t len)
 {
-    /*uint8_t ack = 1;
-    for(uint16_t i=0; i<len; ++i)
-    {
-        if(write(dta[i]) == 0)
-        {
-            ack = 0;
-            break;
-        }
-    }
-
-    return ack;
-    */
-  ///Try to store all data
+  //Try to store all the data
   for(size_t i = 0; i < len; ++i)
   {
     //Return the number of data stored, when the buffer is full (if write return 0)
@@ -292,104 +280,53 @@ uint8_t SoftwareI2C::write(uint8_t *dta, uint8_t len)
 /*************************************************************************************************
  * Function Name: requestFrom
  * Description:  request data from slave
- * Parameters: addr - address of slave
+ * Parameters: address - slave i2c address
                len  - length of request
- * Return: 0: get nak  1: get ack
+ * Return: number of bytes stored for read
 *************************************************************************************************/
-uint8_t SoftwareI2C::requestFrom(uint8_t addr, uint8_t len)
+uint8_t SoftwareI2C::requestFrom(uint8_t address, size_t len)
 {
-    sendStart();                             // start signal
-    _i2c_address = addr;
-    //_rx_len = len;
+    _i2c_address = address;
 
-    uint8_t ret = sendByteAck((_i2c_address<<1)+1);  // send read address and get ack
-    //sclSet(LOW);
-    _transmissionBegun = true;
+    sendStart();                             // start signal
+    // send register address, 0x01 = read access, get ack
+    uint8_t nak = sendByteAck((_i2c_address<<1) | 0x01);  
 
     size_t byteRead = 0;
 
+    // read and store the data from the slave
     for (byteRead = 0; byteRead < len; byteRead++)
     {
+        pinMode(_pinSda, INPUT);
         uint8_t ucRt = 0;
-        // get the upper 7 bits of the byte
-        for(uint8_t b=0; b<7; ++b)
+        for(uint8_t b=0; b<8; ++b)
         {
             sclSet(HIGH);
-            tunedDelay(_half_bit_delay_us);
-            ucRt = (ucRt << 1) + sdaGet();
+            tunedDelay(_half_bit_delay_us / 2); // sample in the middle of the clock pulse
+            ucRt = (ucRt << 1) + quickSdaGet();
             sclSet(LOW);
-            tunedDelay(_half_bit_delay_us);
+            //tunedDelay(_half_bit_delay_us);
         }
-
-        // get the last bit and switch to output prior to setting scl low
-        // (sda toggles if you switch pinMode after scl is set low)
-        sclSet(HIGH);
-        tunedDelay(_half_bit_delay_us);
-        ucRt = (ucRt << 1) + sdaGet();
-        sclSet(LOW);
-        tunedDelay(_half_bit_delay_us);
-
-        // if last packet send NACK, otherwise send ACK
-        uint8_t last_packet = (byteRead +1 == len);//(--_rx_len == 0);
-
-        sdaSet(last_packet);
-        sclSet(HIGH);
-        tunedDelay(_half_bit_delay_us);
-        sclSet(LOW);
-        sdaSet(LOW);
-        tunedDelay(_half_bit_delay_us);
 
         // store the byte
         rxBuffer.store_char(ucRt);
-    }
 
-    // validate the return using the sendByteAck
-    return byteRead * (!ret);//ret;
-}
+        // if last packet send NAK, otherwise send ACK
+        bool last_packet = (byteRead +1 == len);
 
-/*************************************************************************************************
- * Function Name: read
- * Description:  read a byte from i2c
- * Parameters: None
- * Return: data get
-*************************************************************************************************/
-uint8_t SoftwareI2C::read()
-{
-    return rxBuffer.read_char();
-    /*
-    if(_rx_len == 0) return 0;
-
-    uint8_t ucRt = 0;
-
-    for(uint8_t i=0; i<7; ++i)
-    {
+        sdaSet(last_packet);
+        pinMode(_pinSda, OUTPUT);
+        //sdaSet(last_packet);
         sclSet(HIGH);
         tunedDelay(_half_bit_delay_us);
-        ucRt = (ucRt << 1) + sdaGet();
         sclSet(LOW);
-        tunedDelay(_half_bit_delay_us);
+        //tunedDelay(_half_bit_delay_us);
     }
-
-    // get the last bit and switch to output prior to setting scl low
-    // (sda toggles if you switch pinMode after scl is set low)
-    sclSet(HIGH);
-    tunedDelay(_half_bit_delay_us);
-    ucRt = (ucRt << 1) + sdaGet();
-    sclSet(LOW);
-    tunedDelay(_half_bit_delay_us);
-
-    // if last packet send NACK, otherwise send ACK
-    uint8_t last_packet = (--_rx_len == 0);
-
-    sdaSet(last_packet);
-    sclSet(HIGH);
-    tunedDelay(_half_bit_delay_us);
-    sclSet(LOW);
     sdaSet(LOW);
-    tunedDelay(_half_bit_delay_us);
+    sendStop();
     
-    return ucRt;
-    */
+    // validate the return using the sendByteAck
+    return byteRead * (!nak);//ret;
 }
 
 /*********************************************************************************************************

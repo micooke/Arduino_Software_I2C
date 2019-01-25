@@ -50,7 +50,6 @@ private:
     RingBuffer rxBuffer;
     RingBuffer txBuffer;
 
-    uint16_t _bit_delay_us;
     uint16_t _half_bit_delay_us;
 
     uint8_t _i2c_address;
@@ -58,7 +57,7 @@ private:
     bool _transmissionBegun;
     
     inline uint8_t sdaGet();
-    inline uint8_t sclGet();
+    inline uint8_t quickSdaGet();
 
     inline void sdaSet(uint8_t ucDta);
     inline void sclSet(uint8_t ucDta);
@@ -83,19 +82,21 @@ private:
 #endif
     
 public:
-    SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8) : _pinScl(pinScl), _pinSda(pinSda), _transmissionBegun(false), _i2c_address(0x3C) { setClock(/*100000*/0); }
+    SoftwareI2C(uint8_t pinSda = 7, uint8_t pinScl = 8) : _pinScl(pinScl), _pinSda(pinSda), _transmissionBegun(false), _i2c_address(0x3C) { setClock(100000); }
     void init(uint8_t pinSda = 7, uint8_t pinScl = 8) { _pinSda = pinSda; _pinScl = pinScl; }
     void begin();
     void beginTransmission(uint8_t addr);
     uint8_t endTransmission(bool stopBit = false);
-    void setClock(uint32_t baudrate);
+    void setClock(uint32_t frequency_Hz);
     void end() {}
     
-    uint8_t write(uint8_t dta);
-    uint8_t write(uint8_t *dta, uint8_t len);
-    uint8_t requestFrom(uint8_t addr, uint8_t len);
-    uint8_t read();
-    uint8_t available() { return rxBuffer.available();}
+    size_t write(uint8_t dta);
+    size_t write(uint8_t *dta, size_t len);
+    uint8_t requestFrom(uint8_t register_address, size_t len);
+    int read() { return rxBuffer.read_char(); }
+    int available() { return rxBuffer.available(); }
+    int peek() { return rxBuffer.peek(); }
+    void flush() {} // Do nothing
 };
 
 #endif
